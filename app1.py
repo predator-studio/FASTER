@@ -12,7 +12,7 @@ import requests
 from flask import Flask, jsonify, request, send_from_directory, redirect
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+FRONTEND_DIR = BASE_DIR
 
 app = Flask(__name__, static_folder=PROJECT_DIR, static_url_path="")
 APP_SLUG = ""
