@@ -12,11 +12,10 @@ import requests
 from flask import Flask, jsonify, request, send_from_directory, redirect
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-FRONTEND_DIR = os.path.join(PROJECT_DIR, "frontend")
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 
 app = Flask(__name__, static_folder=PROJECT_DIR, static_url_path="")
-APP_SLUG = os.getenv("APP_SLUG", "faster").strip().strip("/")
+APP_SLUG = ""
 
 # Albania bounds
 ALBANIA_LAT_MIN, ALBANIA_LAT_MAX = 39.64, 42.66
@@ -248,8 +247,6 @@ def fetch_weather(lat: float = DEFAULT_LAT, lon: float = DEFAULT_LON) -> dict:
 
 @app.route("/")
 def index():
-    if APP_SLUG:
-        return redirect(f"/{APP_SLUG}")
     return send_from_directory(FRONTEND_DIR, "index.html")
 
 
