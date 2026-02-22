@@ -230,6 +230,11 @@ def predict_traffic(
 
 
 def fetch_weather(lat: float = DEFAULT_LAT, lon: float = DEFAULT_LON) -> dict:
+    """
+    Fetch weather data safely.
+    If the API fails or times out, returns default data
+    so the app won’t crash.
+    """
     try:
         url = "https://api.open-meteo.com/v1/forecast"
         params = {
@@ -238,11 +243,22 @@ def fetch_weather(lat: float = DEFAULT_LAT, lon: float = DEFAULT_LON) -> dict:
             "hourly": "weather_code,precipitation",
             "forecast_days": 2,
         }
-        r = requests.get(url, params=params, timeout=10)
+        r = requests.get(url, params=params, timeout=5)  # shorter timeout
         r.raise_for_status()
-        return r.json()
+        data = r.json()
+        # Ensure hourly keys exist
+        if "hourly" not in data:
+            data["hourly"] = {"weather_code": [0]*48, "precipitation": [0]*48}
+        return data
     except Exception as e:
-        return {"error": str(e), "hourly": None}
+        # Return default dummy data instead of crashing
+        return {
+            "error": str(e),
+            "hourly": {
+                "weather_code": [0] * 48,
+                "precipitation": [0] * 48
+            }
+        }
 
 
 @app.route("/")
