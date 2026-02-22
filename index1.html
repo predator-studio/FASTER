@@ -1,0 +1,161 @@
+﻿<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Faster | Parashikim trafiku Shqipëri</title>
+  <meta name="description" content="Matematika që parashikon trafikun · Si mund të modelojmë dhe përmirësojmë trafikun në jetën tonë të përditshme">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles1.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">◈</span>
+        <h1>Faster</h1>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="map-section">
+        <div class="map-header">
+          <div>
+            <h2>Harta e trafikut</h2>
+          </div>
+          <div class="map-meta">
+            <span class="map-time-label">Koha</span>
+            <span id="map-time" class="map-time">—</span>
+          </div>
+        </div>
+        <div class="map-controls">
+          <div class="map-controls-gps">
+            <button id="locate-me" type="button" class="btn btn-ghost">📍 Përdor GPS-in tim</button>
+            <button id="clear-highlight" type="button" class="btn btn-ghost" style="display: none;">✖️ Pastro Theksimin</button>
+            <span id="gps-status" class="map-status" aria-live="polite"></span>
+          </div>
+          <div class="map-controls-nav">
+            <input id="destination-input" type="text" class="nav-input" placeholder="p.sh. Gazheli, 5 Maji, 15 Katëshi, Pallati me shigjeta, Blloku, Durrës" />
+            <input id="departure-time" type="time" class="nav-input-time" title="Koha e nisjes (opsionale)" />
+            <button id="start-nav" type="button" class="btn">Nis navigimin</button>
+            <span id="nav-status" class="map-status" aria-live="polite"></span>
+          </div>
+        </div>
+        <div class="map-container">
+          <div class="map-figure">
+            <div id="map-fallback" class="map-fallback">Duke ngarkuar hartën…</div>
+            <div id="leaflet-map" aria-label="Harta e trafikut të Shqipërisë"></div>
+          </div>
+          <div class="map-legend">
+            <div class="legend-block">
+              <span class="legend-title">Trafiku</span>
+              <div class="legend-item">
+                <span class="legend-swatch low"></span>
+                <span>I ulët (&gt;50 km/h)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-swatch medium"></span>
+                <span>Mesatar (30-50 km/h)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-swatch high"></span>
+                <span>I lartë (&lt;30 km/h)</span>
+              </div>
+            </div>
+            <div class="legend-block">
+              <span class="legend-title">Interpretimi</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="controls">
+        <div class="control-group">
+          <label for="hour">Zgjidh orën</label>
+          <input type="range" id="hour" min="0" max="23" value="8" />
+          <span id="hour-display">08:00</span>
+        </div>
+        <div class="control-group">
+          <label for="time-precise">Koha e saktë (HH:MM)</label>
+          <input type="time" id="time-precise" step="60" />
+        </div>
+        <div class="control-group">
+          <label for="city">Qyteti (Shqipëri)</label>
+          <select id="city">
+            <option value="41.3275,19.8187" selected>Tirana</option>
+            <option value="41.3242,19.4554">Durrës</option>
+            <option value="40.4667,19.4833">Vlorë</option>
+            <option value="41.5086,19.7928">Shkodër</option>
+            <option value="40.7167,19.5667">Fier</option>
+            <option value="41.1125,20.0822">Korçë</option>
+            <option value="41.1133,20.0842">Elbasan</option>
+            <option value="40.6275,20.0892">Berat</option>
+            <option value="42.0683,20.1517">Kukës</option>
+            <option value="40.9419,20.9992">Gjirokastër</option>
+            <option value="40.7353,19.9111">Lushnjë</option>
+            <option value="41.1853,20.0272">Pogradec</option>
+          </select>
+        </div>
+        <button id="refresh" class="btn">Përditëso parashikimin</button>
+      </section>
+
+      <section class="prediction-card">
+        <div class="traffic-level" id="traffic-level">
+          <span class="level-badge" id="level-badge">—</span>
+          <span class="traffic-value" id="traffic-value">—</span>
+          <span class="traffic-unit">%</span>
+        </div>
+        <div class="details" id="details">
+          <p>Trafiku bazë (oraret): <strong id="base-traffic">—</strong>%</p>
+          <p>Shumëzuesi i motit: <strong id="weather-mult">—</strong>x</p>
+        </div>
+        <div class="weather-summary" id="weather-summary">
+          <span class="weather-icon" id="weather-icon">☀️</span>
+          <span id="weather-desc">Duke ngarkuar…</span>
+        </div>
+      </section>
+
+
+      <section class="chart-section">
+        <h2>Parashikimi 24-orësh i trafikut</h2>
+        <p class="chart-desc">Kulme: fillimi i shkollës (8:00), fillimi i punës (9:00), mbarimi i shkollës (13:00), mbarimi i punës (17:00)</p>
+        <div class="chart-container">
+          <canvas id="traffic-chart"></canvas>
+        </div>
+      </section>
+
+      <section class="model-info">
+        <h2>Si funksionon matematika</h2>
+        <div class="info-grid">
+          <div class="info-card">
+            <h3>Orari i shkollave</h3>
+            <p>Kulme në 7:30–8:30 (hedhje) dhe 13:00–13:30 (marrje). Orari tipik shqiptar: 8:00–13:00.</p>
+          </div>
+          <div class="info-card">
+            <h3>Orari i bizneseve</h3>
+            <p>Kulme në 8:30–9:30 (ardhje) dhe 17:00–18:00 (largim). Dita standarde: 9:00–17:00.</p>
+          </div>
+          <div class="info-card">
+            <h3>Faktori i motit</h3>
+            <p>Shiu rrit ngopjen ~20–45%, bora ~40–70%. Mot i qartë = bazë. Burim: Open-Meteo.</p>
+          </div>
+          <div class="info-card">
+            <h3>Formula</h3>
+            <p><code>Trafiku = Σ Gaussian(kulme) × Shumëzuesi_motit</code></p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer"></footer>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app1 (1).js"></script>
+</body>
+</html>
+
+
+
